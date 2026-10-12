@@ -3,10 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Placar Vôlei</title>
+<title>Vôlei: times e placar</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Placar Vôlei">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#10233a;--card:#1b3a5c;--card2:#2c5683;--ink:#fbf1de;--mut:#a8bdd3;--hot:#ff7a45;
+:root{--bg:#10233a;--card:#1b3a5c;--card2:#2c5683;--ink:#fbf1de;--mut:#a8bdd3;--hot:#ff7a45;--ball:#d6e82a;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}
 html,body{margin:0;touch-action:manipulation;-webkit-user-select:none;user-select:none}
@@ -23,7 +27,7 @@ section{display:flex;flex-direction:column;gap:10px}[hidden]{display:none!import
 input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--card2);border-radius:10px;padding:10px;-webkit-user-select:text;user-select:text}
 .btn,select{background:var(--card);border:1px solid var(--card2);border-radius:10px;padding:10px 14px}
 .btn.main{background:var(--hot);border-color:var(--hot);color:#1a0d05;font-weight:700}
-.chip{display:inline-flex;gap:6px;align-items:center;background:var(--card);border-radius:20px;padding:4px 6px 4px 12px;margin:3px}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--card);border-radius:20px;padding:4px 8px 4px 12px;margin:3px}
 .chip button{background:var(--card2);border:0;border-radius:50%;width:24px;height:24px;line-height:1}
 .mut{color:var(--mut);font-size:14px}
 .mem{color:var(--mut);font-size:14px;margin-top:4px}
@@ -37,14 +41,14 @@ td:first-child,th:first-child{text-align:left}
 .vs{text-align:center;color:var(--mut);font:700 20px 'Barlow Condensed',sans-serif}
 .msg{background:var(--hot);color:#1a0d05;border-radius:10px;padding:10px;font-weight:600}
 input[type=checkbox]{flex:none;width:22px;height:22px;padding:0}
-.chip{padding-right:12px}
-.chip:has(button){padding-right:6px}
 .chip.sel{background:var(--hot);color:#1a0d05}
 [data-m],[data-g],[data-rn]{cursor:pointer}
 .tname{text-decoration:underline dotted}
-  .team-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-  .confirm{background:var(--hot);color:#1a0d05;border-radius:10px;padding:10px;font-weight:700}
-  .empty-slot{border:1px dashed var(--mut);border-radius:10px;padding:10px;margin-top:8px;color:var(--mut)}
+.team-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.confirm{background:var(--hot);color:#1a0d05;border-radius:10px;padding:10px;font-weight:700}
+.empty-slot{border:1px dashed var(--mut);border-radius:10px;padding:10px;margin-top:8px;color:var(--mut)}
+.stars-select { background: var(--bg); border: 1px solid var(--card2); border-radius: 8px; padding: 4px 8px; font-size: 13px; color: var(--ball); font-weight: bold; }
+.star-badge { color: var(--ball); font-size: 12px; font-weight: bold; margin-left: 2px; }
 </style>
 </head>
 <body>
@@ -57,8 +61,21 @@ input[type=checkbox]{flex:none;width:22px;height:22px;padding:0}
 
 <section id="tj">
   <div class="row"><input id="pn" placeholder="Nome (ou vários, separados por vírgula)" aria-label="Nome do jogador"><button class="btn main" id="add">Adicionar</button></div>
-  <label class="row mut" style="gap:8px"><input type="checkbox" id="pf"> É mulher (vale para os nomes que você adicionar)</label>
-  <div class="card"><div class="mut" id="cnt"></div><div class="mut">Toque num nome para marcar ou desmarcar ♀.</div><div id="pl"></div></div>
+  <div class="row" style="justify-content: space-between;">
+    <label class="row mut" style="gap:8px"><input type="checkbox" id="pf"> É mulher (♀)</label>
+    <div class="row" style="gap:6px; align-items:center;">
+      <span class="mut">Nível padrão:</span>
+      <select id="default-rank" class="stars-select">
+        <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+        <option value="4">⭐⭐⭐⭐ (4)</option>
+        <option value="3" selected>⭐⭐⭐ (3)</option>
+        <option value="2">⭐⭐ (2)</option>
+        <option value="1">⭐ (1)</option>
+        <option value="0">💥 (0)</option>
+      </select>
+    </div>
+  </div>
+  <div class="card"><div class="mut" id="cnt"></div><div class="mut">Toque no nome para alternar ♀. Ajuste as estrelas individualmente se desejar.</div><div id="pl"></div></div>
   <button class="btn" id="clrp">Limpar lista de jogadores</button>
 </section>
 
@@ -66,8 +83,8 @@ input[type=checkbox]{flex:none;width:22px;height:22px;padding:0}
   <label class="row mut" style="gap:8px"><input type="checkbox" id="one"> Uma mulher por time</label>
   <div class="row"><span class="mut">Jogadores por time</span>
     <select id="sz"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
-    <button class="btn main" id="draw">Sortear times</button></div>
-  <div class="mut">Para editar: toque num jogador e depois em outro (troca de time) ou em "Mover para cá". Toque no nome do time para renomear. Para tirar alguém do time, toque nele e depois em "Mover para cá" no card Reservas. Para substituir, toque no reserva e depois em quem vai sair, ou use "Mover para cá" no time.</div>
+    <button class="btn main" id="draw">Sortear times (Nivelado)</button></div>
+  <div class="mut">O sorteio agora equilibra o nível de estrelas dos times automaticamente! Para editar: toque num jogador e depois em outro ou em "Mover para cá". Toque no nome do time para renomear.</div>
   <div id="tm"></div>
   <div class="card"><b>Vitórias</b><table id="rk"></table></div>
   <button class="btn" id="rst">Zerar times e vitórias</button>
@@ -88,16 +105,25 @@ input[type=checkbox]{flex:none;width:22px;height:22px;padding:0}
 const $=id=>document.getElementById(id);
 let D={players:[],teams:[],court:[],queue:[],bench:null,sc:[0,0],target:25,rest:2,size:6,msg:"",one:false,sel:null,pool:[],ph:[],tb:null,pend:null,note:""},U=[];
 try{const s=localStorage.getItem("volei");if(s)D=Object.assign(D,JSON.parse(s))}catch(e){}
-const fix=p=>typeof p==="string"?{n:p,f:false}:p;
-D.players=D.players.map(fix);D.teams.forEach(t=>t.m=t.m.map(fix));D.sel=null;D.pool=(D.pool||[]).map(fix);D.tb=!!D.tb;D.pend=D.pend||null;
+
+const fix=p=>typeof p==="string"?{n:p,f:false,r:3}:{n:p.n,f:!!p.f,r:typeof p.r==="number"?p.r:3};
+D.players=D.players.map(fix);
+D.teams.forEach(t=>t.m=t.m.map(fix));
+D.sel=null;
+D.pool=(D.pool||[]).map(fix);
+D.tb=!!D.tb;
+D.pend=D.pend||null;
+
 const grp=i=>i===-1?D.pool:D.teams[i].m;
 const poolCard=()=>`<div class="card"><b>Reservas</b> <span class="mut">${D.pool.length}</span>${D.sel&&D.sel[0]!==-1?' <button class="btn" data-mv="-1">Mover para cá</button>':""}<div>${D.pool.map((p,pi)=>`<span class="chip${D.sel&&D.sel[0]===-1&&D.sel[1]===pi?" sel":""}" data-m="-1:${pi}">${pn(p)}</span>`).join("")||'<span class="mut">Vazio. Selecione alguém de um time e toque em "Mover para cá" para tirá-lo do time.</span>'}</div></div>`;
+
 const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-const pn=p=>(p.f?"♀ ":"")+esc(p.n);
+const pn=p=>(p.f?"♀ ":"")+esc(p.n)+` <span class="star-badge">(${p.r}★)</span>`;
 const save=()=>{try{localStorage.setItem("volei",JSON.stringify(D))}catch(e){}};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function snap(){U.push(JSON.stringify(D));if(U.length>60)U.shift()}
 function speak(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="pt-BR";speechSynthesis.speak(u)}catch(e){}}
+
 let wl=null;
 async function awake(){try{if("wakeLock" in navigator&&!wl){wl=await navigator.wakeLock.request("screen");wl.addEventListener("release",()=>{wl=null})}}catch(e){}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")awake()});
@@ -107,27 +133,54 @@ function add(){
   const v=$("pn").value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
   if(!v.length)return;
   const f=$("pf").checked;
-  snap();D.players.push(...v.map(n=>({n,f})));if(D.teams.length)D.pool.push(...v.map(n=>({n,f})));$("pn").value="";save();render();
+  const r=+($("default-rank").value||3);
+  snap();
+  const newObjs=v.map(n=>({n,f,r}));
+  D.players.push(...newObjs);
+  if(D.teams.length)D.pool.push(...newObjs);
+  $("pn").value="";
+  save();
+  render();
 }
+
 function draw(){
   const P=D.players.map(p=>({...p}));
   if(P.length<4){alert("Adicione pelo menos 4 jogadores.");return}
   if(D.teams.length&&!confirm("Sortear de novo zera as vitórias. Continuar?"))return;
   snap();
+  
   const n=Math.max(2,Math.ceil(P.length/D.size));
   D.teams=Array.from({length:n},(_,i)=>({name:"Time "+(i+1),m:[],w:0,s:0}));
   let note="";
+
   if(D.one){
     const W=shuf(P.filter(p=>p.f)),M=shuf(P.filter(p=>!p.f));
     W.slice(0,n).forEach((p,i)=>D.teams[i].m.push(p));
     if(W.length<n)note=`Só há ${W.length} mulher(es) para ${n} times, então alguns times ficarão sem.`;
     if(W.length>n)note="Há mais mulheres que times, então alguns times terão mais de uma.";
     W.slice(n).concat(M).forEach(p=>{D.teams.reduce((a,t)=>t.m.length<a.m.length?t:a).m.push(p)});
-  }else shuf(P).forEach((p,i)=>D.teams[i%n].m.push(p));
+  } else {
+    // Algoritmo de Sorteio Nivelado por Estrelas (Snake Draft balanceado por soma de ranks)
+    // Ordena do mais forte para o mais fraco
+    P.sort((a,b)=>b.r-a.r);
+    
+    // Distribui em formato snake para equilibrar as somas de estrelas
+    let idx=0, dir=1;
+    P.forEach(p=>{
+      D.teams[idx].m.push(p);
+      idx+=dir;
+      if(idx>=n){idx=n-1;dir=-1;}
+      else if(idx<0){idx=0;dir=1;}
+    });
+    // Embaralha a ordem interna dos jogadores dentro de cada time recém-formado
+    D.teams.forEach(t=>t.m=shuf(t.m));
+  }
+
   if(note)alert(note);
   D.pool=[];D.court=[0,1];D.queue=[...Array(n).keys()].slice(2);D.bench=null;D.sc=[0,0];D.tb=false;D.pend=null;D.msg="";
   save();render();
 }
+
 function pt(k){
   if(D.court.length<2||D.pend)return;
   awake();snap();D.sc[k]++;
@@ -142,6 +195,7 @@ function pt(k){
   }
   save();render();
 }
+
 function finish(w){
   const wi=D.court[w],li=D.court[1-w],W=D.teams[wi],L=D.teams[li];
   W.w++;W.s++;L.s=0;
@@ -161,19 +215,59 @@ function finish(w){
   speak(m+` Próximo jogo: ${D.teams[D.court[0]].name} contra ${D.teams[D.court[1]].name}.`);
   try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
 }
+
 function render(){
   $("cnt").textContent=D.players.length+" jogadores";
-  $("pl").innerHTML=D.players.map((p,i)=>`<span class="chip"><span data-g="${i}">${pn(p)}</span><button data-r="${i}" aria-label="Remover ${esc(p.n)}">×</button></span>`).join("")||'<span class="mut">Nenhum jogador ainda.</span>';
+  $("pl").innerHTML=D.players.map((p,i)=>`
+    <span class="chip">
+      <span data-g="${i}" style="cursor:pointer;" title="Alternar gênero">${pn_clean(p)}</span>
+      <select class="stars-select" onchange="updatePlayerRank(${i}, this.value)" aria-label="Alterar nível">
+        <option value="5" ${p.r==5?"selected":""}>5★</option>
+        <option value="4.5" ${p.r==4.5?"selected":""}>4.5★</option>
+        <option value="4" ${p.r==4?"selected":""}>4★</option>
+        <option value="3.5" ${p.r==3.5?"selected":""}>3.5★</option>
+        <option value="3" ${p.r==3?"selected":""}>3★</option>
+        <option value="2.5" ${p.r==2.5?"selected":""}>2.5★</option>
+        <option value="2" ${p.r==2?"selected":""}>2★</option>
+        <option value="1.5" ${p.r==1.5?"selected":""}>1.5★</option>
+        <option value="1" ${p.r==1?"selected":""}>1★</option>
+        <option value="0" ${p.r==0?"selected":""}>0★</option>
+      </select>
+      <button data-r="${i}" aria-label="Remover ${esc(p.n)}">×</button>
+    </span>`).join("")||'<span class="mut">Nenhum jogador ainda.</span>';
+
   $("one").checked=D.one;$("sz").value=D.size;$("tgt").value=D.target;$("rest").value=D.rest;
-  $("tm").innerHTML=D.teams.map((t,ti)=>`<div class="card"><b class="tname" data-rn="${ti}">${esc(t.name)}</b> <span class="mut">${t.m.length} jogadores</span>${D.sel&&D.sel[0]!==ti?` <button class="btn" data-mv="${ti}">Mover para cá</button>`:""}<div>${t.m.map((p,pi)=>`<span class="chip${D.sel&&D.sel[0]===ti&&D.sel[1]===pi?" sel":""}" data-m="${ti}:${pi}">${pn(p)}${D.sel&&D.sel[0]===ti&&D.sel[1]===pi?` <button class="btn" data-remove="${ti}:${pi}">Remover</button>`:""}</span>`).join("")}</div><div class="team-actions"><button class="btn" data-addslot="${ti}">Adicionar jogador neste time</button></div>${t.m.length<D.size?`<div class="empty-slot">Há ${D.size-t.m.length} vaga(s) disponível(is).</div>`:""}</div>`).join("")||'<div class="mut">Ainda não sorteou os times.</div>';
+  
+  $("tm").innerHTML=D.teams.map((t,ti)=>{
+    const totalStars = t.m.reduce((acc, curr) => acc + curr.r, 0);
+    return `<div class="card"><div style="display:flex; justify-content:space-between; align-items:center;"><b class="tname" data-rn="${ti}">${esc(t.name)}</b> <span class="mut">${t.m.length} jog. (${totalStars.toFixed(1)}★)</span></div>${D.sel&&D.sel[0]!==ti?` <button class="btn" data-mv="${ti}">Mover para cá</button>`:""}<div>${t.m.map((p,pi)=>`<span class="chip${D.sel&&D.sel[0]===ti&&D.sel[1]===pi?" sel":""}" data-m="${ti}:${pi}">${pn(p)}${D.sel&&D.sel[0]===ti&&D.sel[1]===pi?` <button class="btn" data-remove="${ti}:${pi}">Remover</button>`:""}</span>`).join("")}</div><div class="team-actions"><button class="btn" data-addslot="${ti}">Adicionar jogador neste time</button></div>${t.m.length<D.size?`<div class="empty-slot">Há ${D.size-t.m.length} vaga(s) disponível(is).</div>`:""}</div>`;
+  }).join("")||'<div class="mut">Ainda não sorteou os times.</div>';
+  
   if(D.teams.length)$("tm").innerHTML+=poolCard();
+  
   const rk=D.teams.slice().sort((a,b)=>b.w-a.w);
   $("rk").innerHTML=rk.length?"<tr><th>Time</th><th>Vitórias</th><th>Seguidas</th></tr>"+rk.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.w}</td><td>${t.s}</td></tr>`).join(""):"";
+  
   if(D.court.length<2){$("cg").innerHTML='<div class="card">Sorteie os times na aba Times para começar.</div>';$("info").innerHTML="";return}
+  
   $("cg").innerHTML=[0,1].map(k=>{const t=D.teams[D.court[k]];
     return `<div class="court" data-p="${k}"><div class="tn">${esc(t.name)}${t.s?` · ${t.s} seguida${t.s>1?"s":""}`:""}</div><div class="mem">${t.m.map(pn).join(", ")}</div><div class="sc">${D.sc[k]}</div></div>`}).join('<div class="vs">x</div>');
+  
   $("info").innerHTML=(D.msg?`<div class="msg">${esc(D.msg)}</div>`:"")+(D.pend?`<div class="card"><b>${esc(D.teams[D.court[D.pend.w]].name)} venceu este set por ${D.sc[D.pend.w]} a ${D.sc[1-D.pend.w]}. Confirmar fim da partida?</b><div class="team-actions"><button class="confirm" id="confirmFinish">Confirmar fim</button><button class="btn" id="undoPoint">Desfazer ponto</button></div></div>`:"")+`<div class="mut">Próximos: ${D.queue.map(i=>esc(D.teams[i].name)).join(", ")||"nenhum"}${D.bench!==null?` · Descansando: ${esc(D.teams[D.bench].name)}`:""}${D.tb?" · Desempate de 3 pontos":""}</div>`;
 }
+
+function pn_clean(p){return (p.f?"♀ ":"")+esc(p.n)}
+
+window.updatePlayerRank = function(i, val){
+  snap();
+  D.players[i].r = parseFloat(val);
+  // Atualiza também se estiver nos times ou pool
+  const targetName = D.players[i].n;
+  D.teams.forEach(t => t.m.forEach(p => { if(p.n === targetName) p.r = parseFloat(val); }));
+  D.pool.forEach(p => { if(p.n === targetName) p.r = parseFloat(val); });
+  save();
+}
+
 document.addEventListener("click",e=>{
   const t=e.target,r=t.closest("[data-r]"),c=t.closest("[data-p]"),n=t.closest("[data-t]");
   const g=t.closest("[data-g]"),m=t.closest("[data-m]"),mv=t.closest("[data-mv]"),rn=t.closest("[data-rn]");
@@ -181,7 +275,17 @@ document.addEventListener("click",e=>{
   else if(r){const i=+r.dataset.r,p=D.players[i];snap();D.players.splice(i,1);D.teams.forEach(t=>t.m=t.m.filter(x=>x.n!==p.n));D.pool=D.pool.filter(x=>x.n!==p.n);save();render()}
   else if(g){snap();const p=D.players[+g.dataset.g];p.f=!p.f;save();render()}
   else if(t.closest("[data-remove]")){const el=t.closest("[data-remove]"),[ti,pi]=el.dataset.remove.split(":").map(Number);snap();const p=D.teams[ti].m.splice(pi,1)[0];if(p)D.pool.push(p);save();render()}
-  else if(t.closest("[data-addslot]")){const ti=+t.closest("[data-addslot]").dataset.addslot;const nn=prompt("Nome do novo jogador");if(nn&&nn.trim()){const female=confirm("Esse jogador é mulher? OK = sim, Cancelar = não");const p={n:nn.trim(),f:female};snap();D.players.push(p);D.teams[ti].m.push(p);save();render()}}
+  else if(t.closest("[data-addslot]")){
+    const ti=+t.closest("[data-addslot]").dataset.addslot;
+    const nn=prompt("Nome do novo jogador");
+    if(nn&&nn.trim()){
+      const female=confirm("Esse jogador é mulher? OK = sim, Cancelar = não");
+      const rankInput=prompt("Nível em estrelas (0 a 5):", "3");
+      const rVal=rankInput!==null?parseFloat(rankInput):3;
+      const p={n:nn.trim(),f:female,r:isNaN(rVal)?3:rVal};
+      snap();D.players.push(p);D.teams[ti].m.push(p);save();render()
+    }
+  }
   else if(t.id==="confirmFinish"){if(D.pend){finish(D.pend.w);save();render()}}
   else if(t.id==="undoPoint"){if(U.length){D=JSON.parse(U.pop());save();render()}}
   else if(m){const [a,b]=m.dataset.m.split(":").map(Number);if(!D.sel)D.sel=[a,b];else if(D.sel[0]===a&&D.sel[1]===b)D.sel=null;else{snap();const x=grp(D.sel[0]),y=grp(a),s=D.sel[1];[x[s],y[b]]=[y[b],x[s]];D.sel=null;save()}render()}
@@ -189,6 +293,7 @@ document.addEventListener("click",e=>{
   else if(rn){const i=+rn.dataset.rn,nn=prompt("Nome do time",D.teams[i].name);if(nn&&nn.trim()){snap();D.teams[i].name=nn.trim().slice(0,20);save();render()}}
   else if(c)pt(+c.dataset.p);
 });
+
 $("add").onclick=add;
 $("pn").addEventListener("keydown",e=>{if(e.key==="Enter")add()});
 $("draw").onclick=draw;
@@ -199,6 +304,7 @@ $("one").onchange=e=>{D.one=e.target.checked;save()};
 $("sz").onchange=e=>{D.size=+e.target.value;save()};
 $("tgt").onchange=e=>{D.target=+e.target.value;save()};
 $("rest").onchange=e=>{D.rest=+e.target.value;save()};
+
 ["gesturestart","gesturechange"].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault()));
 document.querySelectorAll("nav button[data-t]").forEach(btn=>btn.addEventListener("click",()=>tab(btn.dataset.t)));
 tab("j");
