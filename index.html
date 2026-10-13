@@ -56,7 +56,8 @@ td,th{padding:8px 4px;border-top:1px solid var(--card2);text-align:center}
 td:first-child,th:first-child{text-align:left}
 .game-teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .court{border:2px solid var(--ink);border-radius:14px;padding:12px;background:var(--card);text-align:center;min-width:0}
-.court h3{margin:0 0 6px;font-size:16px;overflow-wrap:anywhere}
+.court h3{margin:0 0 2px;font-size:18px;overflow-wrap:anywhere}
+.court-roster{font-size:13px;color:var(--mut);margin-bottom:8px;min-height:18px;overflow-wrap:anywhere}
 .score{font-size:clamp(54px,15vw,90px);font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
 .court button{width:100%;margin-top:7px}
 .message{padding:11px;border-radius:10px;background:var(--hot);color:#1a0d05;font-weight:800}
@@ -93,7 +94,19 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
   <section id="tab-teams" hidden>
     <div class="row"><label class="row mut"><input type="checkbox" id="one-woman"> Uma mulher por equipe</label></div>
-    <div class="row"><label class="mut" for="team-size">Jogadores por equipe</label><select id="team-size"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select><button type="button" class="btn main" id="draw-teams">Sortear equipes niveladas</button></div>
+    <div class="row">
+      <label class="mut" for="team-size">Jogadores por equipe</label>
+      <select id="team-size"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select>
+    </div>
+    <div class="row">
+      <label class="mut" for="rest-rule">Regra de descanso</label>
+      <select id="rest-rule">
+        <option value="0" selected>Não descansar</option>
+        <option value="2">Descansar 1 jogo após 2 vitórias seguidas</option>
+        <option value="3">Descansar 1 jogo após 3 vitórias seguidas</option>
+      </select>
+    </div>
+    <button type="button" class="btn main" id="draw-teams">Sortear equipes niveladas</button>
     <p class="mut">O sorteio considera apenas os jogadores <b>titulares</b>. Toque em qualquer jogador (na equipe ou na reserva) para selecioná-lo e movê-lo.</p>
     
     <!-- Espaço de Jogadores na Reserva -->
@@ -121,13 +134,23 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
   <section id="tab-game" hidden>
     <div class="row"><label class="mut" for="target-score">Pontos do set</label><select id="target-score"><option value="12" selected>12 pontos</option><option value="15">15 pontos</option><option value="21">21 pontos</option><option value="25">25 pontos</option></select></div>
-    <div class="mut">Toque em +1 para marcar ponto. No set de 12, com 11–11 o desempate passa a ser até 3 pontos, com diferença mínima de 2. Você pode desfazer o último ponto.</div>
+    <div class="mut">Toque em +1 para marcar ponto. No set de 12, com 11–11 entra o Tie-Break: o placar zera visualmente de 0 a 3, e quem fizer 3 pontos primeiro vence. Você pode desfazer o último ponto.</div>
     <div id="game-status" class="message info" aria-live="polite">Sorteie as equipes na aba Equipes para começar.</div>
     <div class="game-teams">
-      <div class="court"><h3 id="game-name-a">Equipe A</h3><div class="score" id="score-a">0</div><button type="button" class="btn main" id="point-a">+1 ponto</button></div>
-      <div class="court"><h3 id="game-name-b">Equipe B</h3><div class="score" id="score-b">0</div><button type="button" class="btn main" id="point-b">+1 ponto</button></div>
+      <div class="court">
+        <h3 id="game-name-a">Equipe A</h3>
+        <div id="game-players-a" class="court-roster">Nenhum jogador</div>
+        <div class="score" id="score-a">0</div>
+        <button type="button" class="btn main" id="point-a">+1 ponto</button>
+      </div>
+      <div class="court">
+        <h3 id="game-name-b">Equipe B</h3>
+        <div id="game-players-b" class="court-roster">Nenhum jogador</div>
+        <div class="score" id="score-b">0</div>
+        <button type="button" class="btn main" id="point-b">+1 ponto</button>
+      </div>
     </div>
-    <div class="row"><button type="button" class="btn" id="undo-point">Desfazer último ponto</button><button type="button" class="btn" id="finish-game">Encerrar partida</button><button type="button" class="btn" id="new-game">Novo jogo / zerar placar</button></div>
+    <div class="row"><button type="button" class="btn" id="undo-point">Desfazer último ponto</button><button type="button" class="btn" id="finish-game">Encerrar partida</button><button type="button" class="btn" id="new-game">Próxima partida / zerar placar</button></div>
   </section>
 </main>
 <script>
@@ -234,7 +257,7 @@ $('clear-players').addEventListener('click', () => {
   }
 });
 
-function makeTeam(players=[]){return {id:state.nextTeamId++,name:`Equipe ${state.nextTeamId-1}`,players,wins:0};}
+function makeTeam(players=[]){return {id:state.nextTeamId++,name:`Equipe ${state.nextTeamId-1}`,players,wins:0,consecutiveWins:0};}
 
 function drawTeams(){
   const activePlayers = state.players.filter(p => !p.reserve);
@@ -279,7 +302,6 @@ function renderTeams(){
     });
   });
 
-  // Renderizar seção de reservas na aba Equipes
   const reserves = state.players.filter(p => p.reserve);
   const reservesListEl = $('reserves-list');
   const reservesCountEl = $('reserves-count');
@@ -292,7 +314,6 @@ function renderTeams(){
     `).join('') : '<span class="mut">Nenhum jogador na reserva.</span>';
   }
 
-  // Renderizar equipes
   const listEl = $('teams-list');
   if(!listEl) return;
 
@@ -316,7 +337,6 @@ function renderTeams(){
     `;
   }).join('');
   
-  // Controle do painel flutuante de ações do jogador selecionado na aba Equipes
   const selBar = $('selected-player-actions');
   const selLabel = $('selected-player-label');
   const actionToggleRes = $('action-toggle-reserve');
@@ -343,7 +363,6 @@ function renderTeams(){
     if(t){ t.name = inp.value.trim() || `Equipe ${t.id}`; inp.value = t.name; renderTeams(); renderGame(); }
   }));
 
-  // Evento unificado para selecionar jogadores (tanto nos times quanto na reserva)
   document.querySelectorAll('[data-team-player]').forEach(btn => btn.addEventListener('click', () => {
     const id = Number(btn.dataset.teamPlayer);
     state.selectedPlayer = state.selectedPlayer === id ? null : id;
@@ -355,7 +374,11 @@ function renderTeams(){
   listEl.querySelectorAll('[data-move-here]').forEach(btn => btn.addEventListener('click', () => moveSelected(Number(btn.dataset.moveHere))));
   listEl.querySelectorAll('[data-winner]').forEach(btn => btn.addEventListener('click', () => {
     const t = state.teams.find(x => x.id === Number(btn.dataset.winner));
-    if(t) t.wins++;
+    if(t) {
+      t.wins++;
+      state.score = [12, 0];
+      finishMatch();
+    }
     renderTeams();
   }));
   
@@ -369,7 +392,6 @@ function renderTeams(){
   renderGame();
 }
 
-// Ações rápidas para o jogador selecionado na aba Equipes
 const actionToggleRes = $('action-toggle-reserve');
 if(actionToggleRes) {
   actionToggleRes.onclick = () => {
@@ -419,7 +441,6 @@ function moveSelected(teamId){
   const destination = state.teams.find(t=>t.id===teamId), player = getPlayer(state.selectedPlayer);
   if(!destination || !player) return;
 
-  // Se estava na reserva, ao mover para um time ele automaticamente vira titular
   if(player.reserve) {
     player.reserve = false;
   }
@@ -458,14 +479,41 @@ function resetScore(){
   renderGame();
 }
 
+function formatPlayerNames(roster) {
+  if (!roster.length) return 'Nenhum jogador';
+  const names = roster.map(p => (p.female ? '♀ ' : '') + p.name);
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} e ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]}`;
+}
+
 function renderGame(){
   const a = state.teams[0], b = state.teams[1];
   const nameA = $('game-name-a'), nameB =$('game-name-b');
+  const playersA = $('game-players-a'), playersB =$('game-players-b');
   const scoreA = $('score-a'), scoreB =$('score-b');
+
   if(nameA) nameA.textContent = a ? a.name : 'Equipe A';
+  if(playersA) {
+    const rosterA = a ? a.players.map(id => getPlayer(id)).filter(Boolean) : [];
+    playersA.textContent = formatPlayerNames(rosterA);
+  }
+
   if(nameB) nameB.textContent = b ? b.name : 'Equipe B';
-  if(scoreA) scoreA.textContent = state.score[0];
-  if(scoreB) scoreB.textContent = state.score[1];
+  if(playersB) {
+    const rosterB = b ? b.players.map(id => getPlayer(id)).filter(Boolean) : [];
+    playersB.textContent = formatPlayerNames(rosterB);
+  }
+
+  const baseTarget = Number($('target-score').value);
+  const isTieBreak = (baseTarget === 12 && state.score[0] >= 11 && state.score[1] >= 11);
+
+  // Se estiver em Tie-Break, o placar exibe de 0 a 3 (subtraindo 11)
+  const displayScoreA = isTieBreak ? (state.score[0] - 11) : state.score[0];
+  const displayScoreB = isTieBreak ? (state.score[1] - 11) : state.score[1];
+
+  if(scoreA) scoreA.textContent = displayScoreA;
+  if(scoreB) scoreB.textContent = displayScoreB;
 
   const ready = !!a && !!b;
   const pointA = $('point-a'), pointB = $('point-b'), undoBtn =$('undo-point');
@@ -479,9 +527,12 @@ function renderGame(){
       status.className = 'message info';
       status.textContent = 'Sorteie pelo menos duas equipes na aba Equipes para começar.';
     } else if(state.finished){
-      const winner = state.score[0] > state.score[1] ? a : b;
+      const winner = state.score[0] > state.score[1] ? a : (state.score[0] < state.score[1] ? b : null);
       status.className = 'message';
-      status.textContent = `Partida encerrada: ${winner.name} venceu por ${state.score[0]} × ${state.score[1]}.`;
+      status.textContent = winner ? `Partida encerrada: ${winner.name} venceu por ${state.score[0]} × ${state.score[1]}.` : `Partida encerrada em empate (${state.score[0]} × ${state.score[1]}).`;
+    } else if(isTieBreak) {
+      status.className = 'message';
+      status.textContent = '⚡ TIE-BREAK! Placar zerado (Contando de 0 a 3 — Quem fizer 3 pontos primeiro vence).';
     } else {
       status.className = 'message info';
       status.textContent = state.score[0]===0 && state.score[1]===0 ? 'Partida pronta. Bom jogo!' : 'Placar em andamento.';
@@ -490,24 +541,63 @@ function renderGame(){
 }
 
 function target(){
-  const targetSelect = $('target-score');
-  const base = targetSelect ? Number(targetSelect.value) : 12;
+  const base = Number($('target-score').value);
   if(base === 12 && state.score[0] >= 11 && state.score[1] >= 11) return 14;
   return base;
 }
 
+function finishMatch() {
+  if (state.finished || state.teams.length < 2) return;
+  state.finished = true;
+  if (!state.matchCounted && state.score[0] !== state.score[1]) {
+    const winnerIdx = state.score[0] > state.score[1] ? 0 : 1;
+    const winner = state.teams[winnerIdx];
+    if (winner) {
+      winner.wins++;
+    }
+    state.matchCounted = true;
+  }
+  renderTeams();
+}
+
+function applyRotationAndNextGame() {
+  if (state.teams.length < 2) return;
+  const winnerIdx = state.score[0] > state.score[1] ? 0 : (state.score[0] < state.score[1] ? 1 : -1);
+  
+  if (winnerIdx !== -1) {
+    const winner = state.teams[winnerIdx];
+    const loserIdx = winnerIdx === 0 ? 1 : 0;
+    const loser = state.teams[loserIdx];
+
+    winner.consecutiveWins = (winner.consecutiveWins || 0) + 1;
+    loser.consecutiveWins = 0;
+
+    const restLimit = Number($('rest-rule').value);
+    if (restLimit > 0 && winner.consecutiveWins >= restLimit && state.teams.length >= 3) {
+      winner.consecutiveWins = 0;
+      state.teams = state.teams.filter(t => t !== winner && t !== loser);
+      state.teams.splice(2, 0, winner);
+      state.teams.push(loser);
+    } else {
+      const loserTeam = state.teams.splice(loserIdx, 1)[0];
+      state.teams.push(loserTeam);
+    }
+  }
+  resetScore();
+}
+
 function addPoint(side){
   if(state.finished || state.teams.length < 2) return;
-  state.history.push({score:[...state.score], finished:state.finished, matchCounted:state.matchCounted});
+  state.history.push({
+    score:[...state.score],
+    finished:state.finished,
+    matchCounted:state.matchCounted,
+    teamsOrder: state.teams.map(t => ({ id: t.id, wins: t.wins, consecutiveWins: t.consecutiveWins }))
+  });
   state.score[side]++;
   const goal = target();
   if(Math.max(...state.score) >= goal && Math.abs(state.score[0] - state.score[1]) >= 2){
-    state.finished = true;
-    if(!state.matchCounted){
-      const winner = state.teams[state.score[0] > state.score[1] ? 0 : 1];
-      if(winner) winner.wins++;
-      state.matchCounted = true;
-    }
+    finishMatch();
   }
   renderTeams();
 }
@@ -524,6 +614,17 @@ if(undoBtn) undoBtn.addEventListener('click', () => {
     const winner = state.teams[state.score[0] > state.score[1] ? 0 : 1];
     if(winner) winner.wins = Math.max(0, winner.wins - 1);
   }
+  if(prev.teamsOrder) {
+    const teamMap = new Map(state.teams.map(t => [t.id, t]));
+    state.teams = prev.teamsOrder.map(item => {
+      const t = teamMap.get(item.id);
+      if(t) {
+        t.wins = item.wins;
+        t.consecutiveWins = item.consecutiveWins;
+      }
+      return t;
+    }).filter(Boolean);
+  }
   state.score = prev.score;
   state.finished = prev.finished;
   state.matchCounted = prev.matchCounted;
@@ -532,8 +633,15 @@ if(undoBtn) undoBtn.addEventListener('click', () => {
 
 const newGameBtn = $('new-game');
 if(newGameBtn) newGameBtn.addEventListener('click', () => {
-  if((state.score[0] || state.score[1]) && !confirm('Zerar o placar e iniciar um novo jogo?')) return;
-  resetScore();
+  if (!state.finished && (state.score[0] > 0 || state.score[1] > 0)) {
+    if (!confirm('A partida atual está em andamento. Deseja encerrar e ir para a próxima?')) return;
+    finishMatch();
+  }
+  if (state.finished) {
+    applyRotationAndNextGame();
+  } else {
+    resetScore();
+  }
 });
 
 const finishGameBtn = $('finish-game');
@@ -541,13 +649,7 @@ if(finishGameBtn) finishGameBtn.addEventListener('click', () => {
   if(state.teams.length < 2){ alert('Sorteie pelo menos duas equipes primeiro.'); return; }
   if(state.finished) return;
   if(!confirm('Deseja encerrar a partida com o placar atual?')) return;
-  state.finished = true;
-  if(state.score[0] !== state.score[1] && !state.matchCounted){
-    const winner = state.teams[state.score[0] > state.score[1] ? 0 : 1];
-    if(winner) winner.wins++;
-    state.matchCounted = true;
-  }
-  renderTeams();
+  finishMatch();
 });
 
 const targetScoreSelect = $('target-score');
