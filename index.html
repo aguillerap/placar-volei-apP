@@ -268,11 +268,18 @@ function drawTeams(){
   const sorted = [...activePlayers].sort((a,b)=>b.rank-a.rank || Number($('one-woman').checked&&b.female)-Number($('one-woman').checked&&a.female) || Math.random()-.5);
   const teams = Array.from({length:count},()=>makeTeam());
   
-  sorted.forEach((p,i)=>{
-    const round = Math.floor(i/count), pos = i%count;
-    const idx = round%2===0 ? pos : count-1-pos;
-    teams[idx].players.push(p.id);
-  });
+  // Capacidade: todas as equipes completas, exceto a última, que recebe a sobra
+  const cap = teams.map((_,i)=> i < count-1 ? size : activePlayers.length - (count-1)*size);
+  const idxs = [...Array(count).keys()];
+  let round = 0, k = 0;
+  while(k < sorted.length){
+    const order = round%2===0 ? idxs : [...idxs].reverse();
+    for(const idx of order){
+      if(k >= sorted.length) break;
+      if(teams[idx].players.length < cap[idx]) teams[idx].players.push(sorted[k++].id);
+    }
+    round++;
+  }
   
   const statusEl = $('team-status');
   if($('one-woman').checked){
@@ -283,6 +290,8 @@ function drawTeams(){
     statusEl.textContent='Sorteio realizado com os titulares em serpentina.';
   }
   
+  if(statusEl && cap[count-1] < size) statusEl.textContent += ` A ${teams[count-1].name} ficou desfalcada (${cap[count-1]} jogadores).`;
+
   state.teams = teams;
   state.selectedPlayer = null;
   resetScore();
