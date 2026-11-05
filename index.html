@@ -271,12 +271,19 @@ function drawTeams(){
   // Capacidade: todas as equipes completas, exceto a última, que recebe a sobra
   const cap = teams.map((_,i)=> i < count-1 ? size : activePlayers.length - (count-1)*size);
   const idxs = [...Array(count).keys()];
-  let round = 0, k = 0;
-  while(k < sorted.length){
+  let rest = sorted, round = 0, k = 0;
+  if($('one-woman').checked){
+    // Primeiro: uma mulher por equipe (as de maior nível vão primeiro)
+    const seeded = sorted.filter(p=>p.female).slice(0,count);
+    seeded.forEach((p,i)=>teams[i].players.push(p.id));
+    rest = sorted.filter(p=>!seeded.includes(p));
+    round = 1; // a serpentina continua no sentido contrário, equilibrando os níveis
+  }
+  while(k < rest.length){
     const order = round%2===0 ? idxs : [...idxs].reverse();
     for(const idx of order){
-      if(k >= sorted.length) break;
-      if(teams[idx].players.length < cap[idx]) teams[idx].players.push(sorted[k++].id);
+      if(k >= rest.length) break;
+      if(teams[idx].players.length < cap[idx]) teams[idx].players.push(rest[k++].id);
     }
     round++;
   }
